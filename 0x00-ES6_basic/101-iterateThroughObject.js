@@ -1,13 +1,11 @@
+// 101-iterateThroughObject.js
 export default function iterateThroughObject(reportWithIterator) {
-  let arrayIt = '';
+  let result = '';
 
-  for (const [idx, emp] of Object.entries(reportWithIterator)) {
-    arrayIt += `${emp}`;
-
-    if (parseInt(idx) !== reportWithIterator.length - 1) {
-      arrayIt += ' | ';
-    }
+  for (const employee of reportWithIterator) {
+    result += `${employee} | `;
   }
 
-  return arrayIt;
+  // Remove the trailing ' | ' from the string
+  return result.slice(0, -3);
 }
