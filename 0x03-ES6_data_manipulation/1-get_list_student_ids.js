@@ -6,7 +6,7 @@ export default function getListStudentIds(input) {
   }
 
   // If input is an array, use map function to extract student ids
-  const resultArray = input.map(item => item.id);
+  const resultArray = input.map((item) => item.id);
 
   return resultArray;
 }
