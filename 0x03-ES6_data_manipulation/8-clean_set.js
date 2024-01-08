@@ -1,10 +1,8 @@
 // 8-clean_set.js
 export default function cleanSet(set, startString) {
-  // Filter the set values that start with the specified string
-  const filteredValues = [...set].filter(value => value.startsWith(startString));
-
-  // Strip the startString from each value
-  const strippedValues = filteredValues.map(value => value.slice(startString.length));
-
-  return strippedValues.join('-');
+  if (startString === undefined || startString.length === 0) return '';
+  return Array.from(set)
+    .filter((value) => (value ? value.startsWith(startString) : ''))
+    .map((value) => (value ? value.slice(startString.length) : ''))
+    .join('-');
 }
