@@ -1,58 +1,91 @@
 const express = require('express');
-const { argv } = require('process');
 const fs = require('fs');
 
 const app = express();
-const port = 1245;
+const PORT = 1245;
+const DB_FILE = process.argv.length > 2 ? process.argv[2] : '';
 
-app.get('/', (req, res) => {
-  res.set('Content-Type', 'text/plain');
-  res.send('Hello Holberton School!\n');
-});
+const countStudents = (dataPath) => new Promise((resolve, reject) => {
+  if (!dataPath) {
+    reject(new Error('Cannot load the database'));
+  }
+  if (dataPath) {
+    fs.readFile(dataPath, (err, data) => {
+      if (err) {
+        reject(new Error('Cannot load the database'));
+      }
+      if (data) {
+        const reportParts = [];
+        const fileLines = data.toString('utf-8').trim().split('\n');
+        const studentGroups = {};
+        const dbFieldNames = fileLines[0].split(',');
+        const studentPropNames = dbFieldNames.slice(
+          0,
+          dbFieldNames.length - 1,
+        );
 
-app.get('/students', (req, res) => {
-  res.set('Content-Type', 'text/plain');
-  res.write('This is the list of our students\n');
+        for (const line of fileLines.slice(1)) {
+          const studentRecord = line.split(',');
+          const studentPropValues = studentRecord.slice(
+            0,
+            studentRecord.length - 1,
+          );
+          const field = studentRecord[studentRecord.length - 1];
+          if (!Object.keys(studentGroups).includes(field)) {
+            studentGroups[field] = [];
+          }
+          const studentEntries = studentPropNames.map((propName, idx) => [
+            propName,
+            studentPropValues[idx],
+          ]);
+          studentGroups[field].push(Object.fromEntries(studentEntries));
+        }
 
-  const stream = fs.createReadStream(argv[2], 'utf8');
-
-  stream.on('data', (data) => {
-	const lines = data.split('\n').filter(Boolean);
-	const result = lines.map((line) => line.split(','));
-
-    result.shift();
-    const newis = [];
-    result.forEach((data) => newis.push([data[0], data[3]]));
-    const fields = new Set();
-    newis.forEach((item) => fields.add(item[1]));
-    const final = {};
-    fields.forEach((data) => { (final[data] = 0); });
-    newis.forEach((data) => { (final[data[1]] += 1); });
-
-    // Append to the response
-    res.write(`Number of students: ${result.length}\n`);
-    Object.keys(final).forEach((data, index) => {
-	const list = newis.filter((n) => n[1] === data).map((n) => n[0]).join(', ');
-    	res.write(`Number of students in ${data}: ${final[data]}. List: ${list}`);
-    	if (index < Object.keys(final).length - 1) {
-		res.write('\n');
-    	}
+        const totalStudents = Object.values(studentGroups).reduce(
+          (pre, cur) => (pre || []).length + cur.length,
+        );
+        reportParts.push(`Number of students: ${totalStudents}`);
+        for (const [field, group] of Object.entries(studentGroups)) {
+          reportParts.push([
+            `Number of students in ${field}: ${group.length}.`,
+            'List:',
+            group.map((student) => student.firstname).join(', '),
+          ].join(' '));
+        }
+        resolve(reportParts.join('\n'));
+      }
     });
-  });
-
-  stream.on('end', () => {
-    // Close the response after all data has been sent
-    res.end();
-  });
-
-  stream.on('error', (err) => {
-    // Handle errors
-    res.send(`Cannot load the database: ${err.message}`);
-  });
+  }
 });
 
-app.listen(port, () => {
-  console.log(`Server is listening on port ${port}`);
+app.get('/', (_, res) => {
+  res.send('Hello Holberton School!');
+});
+
+app.get('/students', (_, res) => {
+  const responseParts = ['This is the list of our students'];
+
+  countStudents(DB_FILE)
+    .then((report) => {
+      responseParts.push(report);
+      const responseText = responseParts.join('\n');
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Length', responseText.length);
+      res.statusCode = 200;
+      res.write(Buffer.from(responseText));
+    })
+    .catch((err) => {
+      responseParts.push(err instanceof Error ? err.message : err.toString());
+      const responseText = responseParts.join('\n');
+      res.setHeader('Content-Type', 'text/plain');
+      res.setHeader('Content-Length', responseText.length);
+      res.statusCode = 200;
+      res.write(Buffer.from(responseText));
+    });
+});
+
+app.listen(PORT, () => {
+  console.log(`Server listening on PORT ${PORT}`);
 });
 
 module.exports = app;
