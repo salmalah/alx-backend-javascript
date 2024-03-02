@@ -10,3 +10,10 @@ describe('calculateNumber', function() {
   });
 });
 
+describe('second number rounded', function() {
+    it('should round the second number and return the sum', function() {
+      assert.strictEqual(calculateNumber(1.1, 3), 4);
+      assert.strictEqual(calculateNumber(1.9, 3), 5);
+    });
+  });
+});
